@@ -32,5 +32,5 @@
 *.app
 
 # Qt Creator
-CMakeList.txt.user
+CMakeLists.txt.user
 
