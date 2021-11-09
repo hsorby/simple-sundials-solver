@@ -18,6 +18,10 @@ extern "C"
 
 using DataStore = std::vector<std::vector<double>>;
 
+static const auto StartingPoint = "StartingPoint";
+static const auto EndingPoint = "EndingPoint";
+static const auto PointInterval = "PointInterval";
+
 void writeState(std::ofstream &file, double voi, size_t statesCount, double *states, size_t variablesCount, double *variables)
 {
     file << voi << ",";
@@ -57,20 +61,8 @@ void initialiseArray(size_t size, double *array)
     }
 }
 
-int main(int argc, char* argv[])
+Properties processConfig(const std::string &configFile)
 {
-    if (argc < 2) {
-        return 1;
-    }
-
-    std::vector<std::string> params(argv, argv+argc);
-
-    std::string configFile = params[1];
-    std::string outputFile = "output.csv";
-    if (argc > 2) {
-      outputFile = params[2];
-    }
-
     // Read a JSON config file.
     std::ifstream i(configFile);
     nlohmann::json j;
@@ -91,12 +83,34 @@ int main(int argc, char* argv[])
         }
     }
 
-    OdeSolver *solver = new CvodeSolver();
-    solver->setProperties(properties);
+    return properties;
+}
 
-    double startingPoint = 0.0;
-    double endingPoint = 10000.0;
-    double pointInterval = 1.0;
+int main(int argc, char* argv[])
+{
+    if (argc < 2) {
+        return 1;
+    }
+
+    std::vector<std::string> params(argv, argv+argc);
+
+    std::string solverConfigFile = params[1];
+    std::string simulationConfigFile = params[2];
+    std::string outputFile = "output.csv";
+    if (argc > 3) {
+      outputFile = params[3];
+    }
+
+    Properties solverProperties = processConfig(solverConfigFile);
+    Properties simulationProperties = processConfig(simulationConfigFile);
+
+    OdeSolver *solver = new CvodeSolver();
+    solver->setProperties(solverProperties);
+
+    double startingPoint = std::any_cast<double>(simulationProperties.at(StartingPoint));
+    double endingPoint = std::any_cast<double>(simulationProperties.at(EndingPoint));
+    double pointInterval = std::any_cast<double>(simulationProperties.at(PointInterval));
+
     size_t pointCounter = 0;
 
     double voi = startingPoint;
